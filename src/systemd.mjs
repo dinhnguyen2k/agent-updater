@@ -109,6 +109,8 @@ ExecStart=${nodeBin} ${cliEntry} run --trigger=watcher
   const enablePath = runSafeCommand("systemctl", ["--user", "enable", "--now", "agent-updater-watch.path"], {
     timeoutMs: 10_000,
   });
+  runSafeCommand("systemctl", ["--user", "restart", "agent-updater-watch.path"], { timeoutMs: 10_000 });
+  runSafeCommand("systemctl", ["--user", "restart", "agent-updater.timer"], { timeoutMs: 10_000 });
 
   return {
     binLink,

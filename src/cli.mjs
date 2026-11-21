@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
-import { existsSync } from "node:fs";
-import { acquireRunLock } from "./security.mjs";
+import { existsSync, mkdirSync } from "node:fs";
+import { acquireRunLock, resolveTrustedBinary, runSafeCommand } from "./security.mjs";
 import {
+  APP_ROOT,
   appendLog,
   assertTargetRepoConfigured,
   bootstrapAppHomeIfNeeded,
@@ -407,20 +408,59 @@ function cmdRollback(config, flags) {
   console.log(`${C.green}✔ Đã khôi phục nguyên trạng hệ thống agent về '${restored.id}' và đồng bộ lại toàn bộ liên kết.${C.reset}`);
 }
 
+function installKitIntoTarget(absTarget) {
+  const hardcodedCandidate = "/home/nguyentd/nguyentd-agent-kit/bin/install.js";
+  const siblingCandidate = resolve(APP_ROOT, "..", "nguyentd-agent-kit", "bin", "install.js");
+
+  let localScript = null;
+  if (existsSync(hardcodedCandidate)) {
+    localScript = hardcodedCandidate;
+  } else if (existsSync(siblingCandidate)) {
+    localScript = siblingCandidate;
+  }
+
+  if (localScript) {
+    console.log(`${C.cyan}▶ Cài đặt Agent Kit từ mã nguồn cục bộ: ${localScript}${C.reset}`);
+    const res = runSafeCommand(
+      "node",
+      [localScript, "--update", "--no-updater", "--target", absTarget],
+      { cwd: absTarget, timeoutMs: 60_000, env: { ...process.env, AGENT_UPDATER_SKIP: "1" } }
+    );
+    if (!res.ok) {
+      throw new Error(`Không thể cài đặt Agent Kit cục bộ: ${res.stderr || res.stdout}`);
+    }
+    if (res.stdout) console.log(res.stdout);
+  } else {
+    console.log(`${C.cyan}▶ Cài đặt Agent Kit qua npx github:dinhnguyen2k/nguyentd-agent-kit...${C.reset}`);
+    const res = runSafeCommand(
+      "npx",
+      ["-y", "github:dinhnguyen2k/nguyentd-agent-kit", "--update", "--no-updater", "--target", absTarget],
+      { cwd: absTarget, timeoutMs: 120_000, env: { ...process.env, AGENT_UPDATER_SKIP: "1" } }
+    );
+    if (!res.ok) {
+      throw new Error(`Không thể cài đặt Agent Kit qua npx: ${res.stderr || res.stdout}`);
+    }
+    if (res.stdout) console.log(res.stdout);
+  }
+}
+
 function cmdInit(flags) {
   const rawTarget =
     typeof flags.target === "string"
       ? flags.target
-      : flags._[1] ||
-        (existsSync(resolve(process.cwd(), ".agent", "scripts", "validate-agent-system.mjs"))
-          ? process.cwd()
-          : null);
-  if (!rawTarget) {
-    throw new Error(
-      "Thiếu đường dẫn dự án. Hãy chỉ định --target hoặc chạy lệnh ngay trong thư mục dự án có .agent/. Ví dụ: agent-updater init --target ~/my-project"
-    );
-  }
+      : flags._[1] || process.cwd();
   const absTarget = resolve(rawTarget);
+  if (!existsSync(absTarget)) {
+    mkdirSync(absTarget, { recursive: true });
+  }
+
+  const validator = resolve(absTarget, ".agent", "scripts", "validate-agent-system.mjs");
+  const needsKit = !existsSync(validator) || Boolean(flags.kit || flags["with-kit"]);
+  if (needsKit) {
+    console.log(`${C.cyan}📦 Thư mục mục tiêu chưa có Agent Kit. Đang tự động tích hợp nguyentd-agent-kit...${C.reset}`);
+    installKitIntoTarget(absTarget);
+  }
+
   assertTargetRepoConfigured({ targetRepo: absTarget });
   bootstrapAppHomeIfNeeded();
   saveLocalConfig({ targetRepo: absTarget });
@@ -438,7 +478,8 @@ function printHelp() {
   console.log(`${C.bold}${C.cyan}agent-updater - Công cụ tự động nghiên cứu & nâng cấp hệ thống Agent${C.reset}
 
 Các lệnh sử dụng:
-  ${C.bold}agent-updater init --target <path>${C.reset} Gắn dự án mục tiêu và bật bộ hẹn giờ chạy ngầm trong 1 bước
+  ${C.bold}agent-updater init [--target <path>] [--with-kit]${C.reset}
+                                            Tích hợp Agent Kit, gắn dự án và bật bộ hẹn giờ chạy ngầm trong 1 bước
   ${C.bold}agent-updater status${C.reset}              Xem trạng thái hẹn giờ, lần nâng cấp gần nhất và gói chờ duyệt
   ${C.bold}agent-updater check${C.reset}               Quét thử toàn bộ tín hiệu nội bộ & bên ngoài (0 tốn hạn mức AI)
   ${C.bold}agent-updater run [--force]${C.reset}       Chạy phiên nghiên cứu & nâng cấp ngay (--dry-run để chỉ tạo nháp)

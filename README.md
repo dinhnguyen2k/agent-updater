@@ -18,7 +18,7 @@ Hoặc chỉ định đường dẫn từ bất kỳ đâu:
 npx -y github:dinhnguyen2k/agent-updater init --target /duong/dan/du-an
 ```
 
-*(Lệnh trên sẽ tự động sao chép công cụ vào `~/.agent-updater`, gắn lệnh `agent-updater` vào `~/.local/bin`, bật bộ hẹn giờ chạy ngầm `systemd --user` và gắn dòng nhắc thông báo vào `~/.zshrc`).*
+*(Lệnh trên hợp nhất 2 trong 1: tự động phát hiện và cài đặt trọn bộ **NguyenTD Agent Kit** nếu dự án mới chưa có, sao chép công cụ vào `~/.agent-updater`, gắn lệnh `agent-updater` vào `~/.local/bin`, bật bộ hẹn giờ chạy ngầm `systemd --user` và gắn dòng nhắc thông báo vào `~/.zshrc`)*.
 
 ---
 

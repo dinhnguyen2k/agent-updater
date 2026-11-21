@@ -15,6 +15,7 @@ const TRUSTED_BIN_DIRS = [
 
 const ALLOWED_COMMANDS = new Set([
   "node",
+  "npx",
   "bash",
   "python3",
   "git",
