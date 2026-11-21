@@ -1,4 +1,4 @@
-import { appendFileSync, chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { appendFileSync, chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,18 @@ export function determineAppHome() {
   }
   if (existsSync(join(PACKAGE_ROOT, ".git")) || existsSync(join(PACKAGE_ROOT, "config.local.json"))) {
     return PACKAGE_ROOT;
+  }
+  const localBin = join(homedir(), ".local", "bin", "agent-updater");
+  try {
+    if (existsSync(localBin) && lstatSync(localBin).isSymbolicLink()) {
+      const real = realpathSync(localBin);
+      const candidate = resolve(dirname(real), "..");
+      if (existsSync(join(candidate, "config.local.json")) || existsSync(join(candidate, ".git"))) {
+        return candidate;
+      }
+    }
+  } catch {
+    /* ignore */
   }
   return join(homedir(), ".agent-updater");
 }
