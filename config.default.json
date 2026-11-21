@@ -1,0 +1,25 @@
+{
+  "targetRepo": "",
+  "windowsUserDir": "auto",
+  "statusFileName": ".agent_updater_status.json",
+  "scheduleCalendar": "*-*-* 20:00:00",
+  "frictionThreshold": 5,
+  "minCooldownMinutes": 120,
+  "aiTimeoutMs": 480000,
+  "aiRunners": [
+    "omp",
+    "agy"
+  ],
+  "maxBackups": 15,
+  "protectedPatterns": [
+    "AI_RULES.md",
+    "AGENTS.md",
+    "OPINION.md",
+    ".agent/contracts/agent-registry.json",
+    ".agent/contracts/context-budget.json",
+    ".agent/contracts/task-manifest.schema.json",
+    ".agent/contracts/agent-run-metrics.schema.json",
+    ".agent/scripts/**",
+    ".agent/harness/**"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "agent-updater",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Công cụ độc lập chạy ngầm tự động nghiên cứu và nâng cấp hệ thống .agent/ theo phân tầng an toàn.",
+  "bin": {
+    "agent-updater": "./bin/agent-updater"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

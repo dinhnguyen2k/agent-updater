@@ -1,0 +1,10 @@
+# Trạng thái, bản sao lưu và cấu hình riêng từng máy (tuyệt đối không đẩy lên Git)
+state/
+backups/
+pending/
+workspaces/
+logs/
+config.local.json
+node_modules/
+*.log
+.DS_Store
