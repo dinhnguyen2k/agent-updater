@@ -4,19 +4,50 @@ Công cụ độc lập chạy ngầm giúp tự động nghiên cứu độ l�
 
 ---
 
-## Cài đặt lại trên máy mới trong 1 lệnh
+## Cách 1: Khởi tạo và cài đặt tự động 1 lệnh bằng NPX (Khuyên dùng)
+
+Không cần `git clone` hay gõ lệnh phức tạp. Bạn chỉ cần đứng trong thư mục dự án và chạy:
+
+```bash
+npx -y github:dinhnguyen2k/agent-updater init
+```
+
+Hoặc chỉ định đường dẫn từ bất kỳ đâu:
+
+```bash
+npx -y github:dinhnguyen2k/agent-updater init --target /duong/dan/du-an
+```
+
+*(Lệnh trên sẽ tự động sao chép công cụ vào `~/.agent-updater`, gắn lệnh `agent-updater` vào `~/.local/bin`, bật bộ hẹn giờ chạy ngầm `systemd --user` và gắn dòng nhắc thông báo vào `~/.zshrc`).*
+
+---
+
+## Cách 2: Chạy trực tiếp qua NPX bất cứ khi nào
+
+Bạn có thể chạy kiểm tra hoặc xem trạng thái bất kỳ lúc nào mà không cần cài đặt cố định:
+
+```bash
+# Xem trạng thái hệ thống:
+npx -y github:dinhnguyen2k/agent-updater status
+
+# Quét kiểm tra tín hiệu (0 tốn hạn mức AI):
+npx -y github:dinhnguyen2k/agent-updater check
+
+# Chạy phiên nghiên cứu và nâng cấp ngay:
+npx -y github:dinhnguyen2k/agent-updater run
+
+# Xem diff gói chờ duyệt và phê duyệt:
+npx -y github:dinhnguyen2k/agent-updater review
+npx -y github:dinhnguyen2k/agent-updater approve
+```
+
+---
+
+## Cách 3: Cài đặt truyền thống qua Git Clone
 
 ```bash
 git clone https://github.com/dinhnguyen2k/agent-updater.git ~/.agent-updater
 bash ~/.agent-updater/install.sh --target /duong/dan/du-an --zsh
-```
-
-*(Đảm bảo `~/.local/bin` đã nằm trong biến `PATH` của shell).*
-
-Nếu bạn đổi sang thư mục dự án khác sau này, chỉ cần chạy:
-
-```bash
-agent-updater init --target /duong/dan/du-an-moi
 ```
 
 ---
@@ -36,25 +67,25 @@ agent-updater init --target /duong/dan/du-an-moi
 
 ---
 
-## Các lệnh thường dùng
+## Bảng tra cứu lệnh
 
-| Lệnh | Công dụng |
-| --- | --- |
-| `agent-updater status` | Xem trạng thái bộ hẹn giờ, lịch sử nâng cấp và các gói chờ duyệt |
-| `agent-updater check` | Quét thử toàn bộ tín hiệu hiện tại mà không gọi AI (0 tốn hạn mức) |
-| `agent-updater run` | Chủ động chạy kiểm tra và nâng cấp ngay (`--force` để ép AI rà soát lại toàn diện, `--dry-run` để chỉ tạo gói nháp) |
-| `agent-updater review [id]` | Xem tóm tắt Tiếng Việt và bảng so sánh màu (diff) của gói thay đổi nhạy cảm |
-| `agent-updater approve [id\|--all]` | Phê duyệt và đồng bộ gói thay đổi nhạy cảm bằng 1 lệnh |
-| `agent-updater reject [id\|--all]` | Từ chối và ẩn gói chờ duyệt |
-| `agent-updater backups` | Liệt kê các bản sao lưu tự động |
-| `agent-updater rollback [id]` | Hoàn tác hệ thống `.agent/` về bản sao lưu trước đó trong 1 giây |
-| `agent-updater logs [-n 40]` | Xem nhật ký chạy nền |
+| Lệnh thông thường | Lệnh tương đương qua NPX | Công dụng |
+| --- | --- | --- |
+| `agent-updater status` | `npx -y github:dinhnguyen2k/agent-updater status` | Xem trạng thái bộ hẹn giờ, lịch sử nâng cấp và các gói chờ duyệt |
+| `agent-updater check` | `npx -y github:dinhnguyen2k/agent-updater check` | Quét thử toàn bộ tín hiệu hiện tại mà không gọi AI (0 tốn hạn mức) |
+| `agent-updater run` | `npx -y github:dinhnguyen2k/agent-updater run` | Chủ động chạy kiểm tra và nâng cấp ngay (`--force` để ép AI rà soát lại toàn diện) |
+| `agent-updater review [id]` | `npx -y github:dinhnguyen2k/agent-updater review [id]` | Xem tóm tắt Tiếng Việt và bảng so sánh màu (diff) của gói thay đổi nhạy cảm |
+| `agent-updater approve [id]` | `npx -y github:dinhnguyen2k/agent-updater approve [id]` | Phê duyệt và đồng bộ gói thay đổi nhạy cảm bằng 1 lệnh |
+| `agent-updater reject [id]` | `npx -y github:dinhnguyen2k/agent-updater reject [id]` | Từ chối và ẩn gói chờ duyệt |
+| `agent-updater backups` | `npx -y github:dinhnguyen2k/agent-updater backups` | Liệt kê các bản sao lưu tự động |
+| `agent-updater rollback [id]` | `npx -y github:dinhnguyen2k/agent-updater rollback [id]` | Hoàn tác hệ thống `.agent/` về bản sao lưu trước đó trong 1 giây |
+| `agent-updater logs [-n 40]` | `npx -y github:dinhnguyen2k/agent-updater logs` | Xem nhật ký chạy nền |
 
 ---
 
 ## Tích hợp nhãn thông báo lên thanh trạng thái WezTerm (Tùy chọn)
 
-Thêm đoạn ngắn sau vào `wezterm.lua` (trong hàm cập nhật `right_status` có sẵn hàm `read_json_file` và `make_solid_pill`):
+Thêm đoạn ngắn sau vào `wezterm.lua` (trong hàm cập nhật `right_status`):
 
 ```lua
 local ag_up = read_json_file(".agent_updater_status.json")

@@ -132,6 +132,29 @@ export function uninstallSystemd() {
   runSafeCommand("systemctl", ["--user", "daemon-reload"], { timeoutMs: 10_000 });
 }
 
+export function setupZshPromptIfNeeded() {
+  const zshrc = join(homedir(), ".zshrc");
+  if (!existsSync(zshrc)) return false;
+  try {
+    const content = readFileSync(zshrc, "utf8");
+    if (content.includes(".agent_updater_status.json")) return false;
+    const snippet = `
+# Nhắc gọn 1 dòng nếu có gói nâng cấp Agent nhạy cảm đang chờ duyệt
+if [[ -o interactive && -f "$HOME/.agent_updater_status.json" ]]; then
+  __ag_pending=$(grep -o '"pending_count":[[:space:]]*[0-9]*' "$HOME/.agent_updater_status.json" 2>/dev/null | grep -o '[0-9]*' || echo 0)
+  if [[ -n "$__ag_pending" && "$__ag_pending" -gt 0 ]]; then
+    printf '\\033[1;33m⚡ [agent-updater] Có %s gói nâng cấp luật gốc đang chờ duyệt -> gõ: agent-updater review\\033[0m\\n' "$__ag_pending"
+  fi
+  unset __ag_pending
+fi
+`;
+    appendFileSync(zshrc, snippet, "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function querySystemdStatus() {
   const timerActive = runSafeCommand("systemctl", ["--user", "is-active", "agent-updater.timer"], { timeoutMs: 5000 });
   const pathActive = runSafeCommand("systemctl", ["--user", "is-active", "agent-updater-watch.path"], { timeoutMs: 5000 });

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 import { acquireRunLock } from "./security.mjs";
 import {
   appendLog,
   assertTargetRepoConfigured,
+  bootstrapAppHomeIfNeeded,
   countPendingItems,
   loadConfig,
   loadState,
@@ -32,7 +34,7 @@ import {
   rollbackToBackup,
   stagePendingApproval,
 } from "./applier.mjs";
-import { installCliAndSystemd, querySystemdStatus, uninstallSystemd } from "./systemd.mjs";
+import { installCliAndSystemd, querySystemdStatus, setupZshPromptIfNeeded, uninstallSystemd } from "./systemd.mjs";
 
 const C = {
   reset: "\x1b[0m",
@@ -406,17 +408,30 @@ function cmdRollback(config, flags) {
 }
 
 function cmdInit(flags) {
-  const rawTarget = typeof flags.target === "string" ? flags.target : flags._[1];
+  const rawTarget =
+    typeof flags.target === "string"
+      ? flags.target
+      : flags._[1] ||
+        (existsSync(resolve(process.cwd(), ".agent", "scripts", "validate-agent-system.mjs"))
+          ? process.cwd()
+          : null);
   if (!rawTarget) {
-    throw new Error("Thiếu đường dẫn dự án. Ví dụ: agent-updater init --target ~/my-project");
+    throw new Error(
+      "Thiếu đường dẫn dự án. Hãy chỉ định --target hoặc chạy lệnh ngay trong thư mục dự án có .agent/. Ví dụ: agent-updater init --target ~/my-project"
+    );
   }
   const absTarget = resolve(rawTarget);
   assertTargetRepoConfigured({ targetRepo: absTarget });
+  bootstrapAppHomeIfNeeded();
   saveLocalConfig({ targetRepo: absTarget });
   const freshConfig = loadConfig();
   const res = installCliAndSystemd(freshConfig);
+  const zshAdded = setupZshPromptIfNeeded();
   syncStatusIndicator(freshConfig, { state: "idle" });
-  console.log(`${C.green}✔ Đã lưu kho mục tiêu '${absTarget}', gắn lệnh '${res.binLink}' và bật hẹn giờ chạy ngầm.${C.reset}`);
+  console.log(`${C.green}✔ Đã cấu hình kho mục tiêu '${absTarget}', cài đặt lệnh '${res.binLink}' và bật bộ hẹn giờ chạy ngầm systemd.${C.reset}`);
+  if (zshAdded) {
+    console.log(`${C.cyan}✔ Đã bổ sung dòng nhắc thông báo tự động vào ~/.zshrc.${C.reset}`);
+  }
 }
 
 function printHelp() {
@@ -439,8 +454,12 @@ Các lệnh sử dụng:
 }
 
 function main() {
-  const config = loadConfig();
   const flags = parseFlags(process.argv.slice(2));
+  if (flags.help || flags.h || flags._[0] === "help") {
+    printHelp();
+    return;
+  }
+  const config = loadConfig();
   const sub = flags._[0] || "status";
 
   switch (sub) {

@@ -1,11 +1,23 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { appendFileSync, chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { atomicWriteJson, readJsonSafe, redactSecrets } from "./security.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const APP_ROOT = resolve(HERE, "..");
+export const PACKAGE_ROOT = resolve(HERE, "..");
+
+export function determineAppHome() {
+  if (process.env.AGENT_UPDATER_HOME) {
+    return resolve(process.env.AGENT_UPDATER_HOME);
+  }
+  if (existsSync(join(PACKAGE_ROOT, ".git")) || existsSync(join(PACKAGE_ROOT, "config.local.json"))) {
+    return PACKAGE_ROOT;
+  }
+  return join(homedir(), ".agent-updater");
+}
+
+export const APP_ROOT = determineAppHome();
 export const STATE_DIR = join(APP_ROOT, "state");
 export const BACKUPS_DIR = join(APP_ROOT, "backups");
 export const PENDING_DIR = join(APP_ROOT, "pending");
@@ -15,7 +27,9 @@ export const STATE_FILE = join(STATE_DIR, "state.json");
 export const LOCK_FILE = join(STATE_DIR, "run.lock");
 export const MAIN_LOG_FILE = join(LOGS_DIR, "updater.log");
 export const LOCAL_CONFIG_FILE = join(APP_ROOT, "config.local.json");
-export const DEFAULT_CONFIG_FILE = join(APP_ROOT, "config.default.json");
+export const DEFAULT_CONFIG_FILE = existsSync(join(APP_ROOT, "config.default.json"))
+  ? join(APP_ROOT, "config.default.json")
+  : join(PACKAGE_ROOT, "config.default.json");
 
 const SYSTEM_WIN_DIRS = new Set(["All Users", "Default", "Default User", "Public", "desktop.ini"]);
 
@@ -23,6 +37,20 @@ export function ensureAppDirs() {
   for (const dir of [STATE_DIR, BACKUPS_DIR, PENDING_DIR, WORKSPACES_DIR, LOGS_DIR]) {
     mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
+}
+
+export function bootstrapAppHomeIfNeeded() {
+  if (PACKAGE_ROOT === APP_ROOT) return;
+  mkdirSync(APP_ROOT, { recursive: true, mode: 0o700 });
+  for (const item of ["src", "bin", "config.default.json", "package.json", "install.sh", "README.md"]) {
+    const srcPath = join(PACKAGE_ROOT, item);
+    const destPath = join(APP_ROOT, item);
+    if (existsSync(srcPath)) {
+      cpSync(srcPath, destPath, { recursive: true, force: true });
+    }
+  }
+  chmodSync(join(APP_ROOT, "bin", "agent-updater"), 0o755);
+  chmodSync(join(APP_ROOT, "src", "cli.mjs"), 0o755);
 }
 
 export function detectWindowsUserDir() {

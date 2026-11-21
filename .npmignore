@@ -1,0 +1,10 @@
+state/
+backups/
+pending/
+workspaces/
+logs/
+config.local.json
+.git/
+.DS_Store
+*.log
+node_modules/
